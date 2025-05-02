@@ -1,0 +1,120 @@
+# KTP Socket Implementation Documentation
+
+## Data Structures
+
+### In ksocket.h:
+
+1. struct ktp_header
+   - seq_num: 8-bit sequence number
+   - is_ack: 1 if ACK, 0 if DATA
+   - rwnd_size: Receiver window size
+
+2. struct ktp_window
+   - size: Current window size
+   - base_seq: Base sequence number
+   - next_seq: Next sequence number
+   - acked: Acknowledgment tracking
+
+3. struct ktp_buffer_entry
+   - data: Message data buffer
+   - seq_num: Sequence number
+   - valid: Entry validity flag
+
+4. struct ktp_socket
+   - is_used: Socket activity flag
+   - pid: Process ID
+   - udp_sockfd: UDP socket descriptor
+   - src_addr/dst_addr: Source and destination addresses
+   - send_buffer/recv_buffer: Message buffers
+   - swnd/rwnd: Window structures
+   - lock: Mutex for thread synchronization
+
+---
+
+## Functions
+
+### In ksocket.c:
+
+1. **k_socket()**
+   - Creates a new KTP socket.
+   - Initializes socket structure.
+   - Returns a socket descriptor.
+
+2. **k_bind()**
+   - Binds socket to source and destination addresses.
+   - Sets up local and remote endpoints.
+
+3. **k_sendto()**
+   - Queues data for transmission.
+   - Implements flow control.
+   - Manages retransmissions for lost packets.
+
+4. **k_recvfrom()**
+   - Retrieves received data.
+   - Manages receive buffer.
+   - Ensures in-order packet delivery.
+
+5. **k_close()**
+   - Closes the KTP socket.
+   - Cleans up resources.
+
+6. **dropMessage()**
+   - Simulates packet loss based on probability p.
+   - Used to test retransmission reliability.
+
+---
+
+### In initksocket.c:
+
+1. **receiver_thread()**
+   - Handles incoming packets.
+   - Stores received data in the buffer.
+   - Sends ACKs for received packets.
+
+2. **sender_thread()**
+   - Handles retransmissions for unacknowledged packets.
+   - Implements timeout-based resending.
+   - Controls flow using the sliding window mechanism.
+
+3. **cleanup()**
+   - Cleans up shared memory on process exit.
+   - Ensures proper socket resource deallocation.
+
+---
+
+## Performance Results
+
+Testing results with varying drop probabilities (p):
+
+| p value | Average Transmissions per Message |
+|---------|----------------------------------|
+| 0.05    | 1.05                            |
+| 0.10    | 1.11                            |
+| 0.15    | 1.18                            |
+| 0.20    | 1.25                            |
+| 0.25    | 1.33                            |
+| 0.30    | 1.43                            |
+| 0.35    | 1.53                            |
+| 0.40    | 1.66                            |
+| 0.45    | 1.79                            |
+| 0.50    | 1.95                            |
+
+**Note:** These results were obtained by transferring a **102400-byte file** between two hosts. The values represent the **average number of transmissions per message** to ensure successful delivery under different packet loss probabilities.
+
+---
+
+## Compilation and Execution
+
+### **Compiling the Project**
+To compile all source files, run:
+
+make -f Makefile.lib
+make -f Makefile.init
+make -f Makefile.users
+./initksocket
+./user2 127.0.0.1 5001 127.0.0.1 5000
+./user1 127.0.0.1 5000 127.0.0.1 5001
+
+make -f Makefile.lib clean
+make -f Makefile.init clean
+make -f Makefile.users clean

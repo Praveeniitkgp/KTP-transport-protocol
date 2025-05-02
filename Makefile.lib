@@ -1,0 +1,15 @@
+CC = gcc
+CFLAGS = -Wall -pthread
+AR = ar
+ARFLAGS = rcs
+
+all: libksocket.a
+
+libksocket.a: ksocket.o
+	$(AR) $(ARFLAGS) libksocket.a ksocket.o
+
+ksocket.o: ksocket.c ksocket.h
+	$(CC) $(CFLAGS) -c ksocket.c
+
+clean:
+	rm -f *.o libksocket.a

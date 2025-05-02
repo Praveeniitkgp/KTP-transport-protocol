@@ -1,0 +1,19 @@
+CC = gcc
+CFLAGS = -Wall -pthread
+
+all: user1 user2
+
+user1: user1.o libksocket.a
+	$(CC) $(CFLAGS) -o user1 user1.o -L. -lksocket
+
+user2: user2.o libksocket.a
+	$(CC) $(CFLAGS) -o user2 user2.o -L. -lksocket
+
+user1.o: user1.c ksocket.h
+	$(CC) $(CFLAGS) -c user1.c
+
+user2.o: user2.c ksocket.h
+	$(CC) $(CFLAGS) -c user2.c
+
+clean:
+	rm -f *.o user1 user2
